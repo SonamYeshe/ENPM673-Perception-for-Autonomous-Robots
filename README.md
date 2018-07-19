@@ -1,0 +1,2 @@
+# ENPM673---Perception-for-Autonomous-Robots
+This class teaches Image Processing and Computer Vision techniques for Mobile Robots. The class covers three topics:  Image Processing (Image Enhancement, Filtering, Advanced Edge and Texture), 3D Vision (3D Geometry from Multiple view geometry, Motion Processing and Stereo) and an Introduction to Image Segmentation and Object Recognition. Students will be introduced to a number of existing software toolboxes from Vision and Robotics, and will implement a number of smaller  projects in Matlab.
