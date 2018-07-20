@@ -1,0 +1,144 @@
+clear all
+clc
+close all
+% Yellow buoy.
+load '../../Images/TrainingSet/YellowSamples'
+rgbYBuoy = cat(3, Samples(:, 1), Samples(:, 2), Samples(:, 3));
+hsvYBuoy = rgb2hsv(rgbYBuoy);
+hueYBuoy = hsvYBuoy(:, 1, 1);
+hueYBuoy = sort(hueYBuoy);
+[YBuoyMean, YBuoyStd] = EM(1, hueYBuoy);
+% Red buoy.
+load '../../Images/TrainingSet/RedSamples'
+rgbRBuoy = cat(3, Samples(:, 1), Samples(:, 2), Samples(:, 3));
+hsvRBuoy = rgb2hsv(rgbRBuoy);
+hueRBuoy = hsvRBuoy(:, 1, 1);
+hueRBuoy = sort(hueRBuoy);
+[RBuoyMean, RBuoyStd] = EM(1, hueRBuoy);
+% Green buoy.
+load '../../Images/TrainingSet/GreenSamples'
+rgbGBuoy = cat(3, Samples(:, 1), Samples(:, 2), Samples(:, 3));
+hsvGBuoy = rgb2hsv(rgbGBuoy);
+hueGBuoy = hsvGBuoy(:, 1, 1);
+hueGBuoy = sort(hueGBuoy);
+[GBuoyMean, GBuoyStd] = EM(1, hueGBuoy);
+% Open video writer, prepare for recording.
+vid = VideoWriter('HSVSegmentation', 'MPEG-4');
+vid.FrameRate = 10;
+open(vid);
+% Extract images dataset.
+images.filename = ls('../../Images/TestSet/Frames/*.jpg');
+numImages = size(images.filename, 1); 
+for i = 43
+    frame = imread(images.filename(i, :));
+    frameHSV = rgb2hsv(frame);
+    Hue = frameHSV(:, :, 1);
+    %% Calculate Gaussian distribution.
+    % Yellow buoy.
+    probY = normcdf(double(Hue), YBuoyMean, YBuoyStd);
+    % Red buoy.
+    probR = normcdf(double(Hue), RBuoyMean, RBuoyStd);
+    % Green buoy.
+    probG = normcdf(double(Hue), GBuoyMean, GBuoyStd);
+    %% Apply masks on 3 buoys.
+    se = strel('disk', 2);
+    se2 = strel('disk', 3);
+    % Yellow buoy.
+    bw1 = probY > 0.01 & probY < 0.98;
+    bw1 = bwpropfilt(bw1, 'Area', [200 600]);
+    [m,n] = size(bw1);
+    blob_label1 = bwlabel(bw1);
+    stats1 = regionprops(bw1, 'Eccentricity');
+    bw11 = false(m, n);
+    for j = 1 : length(stats1)
+        if stats1(j).Eccentricity < 0.9
+            bw11(blob_label1 == j) = 1;
+        end
+    end
+    bw11 = imdilate(bw11, se);
+%     imshow(bw11);
+    % Red buoy.
+    bw2 = probR > 0.01 & probR < 0.98;
+    bw2 = bwpropfilt(bw2, 'Area', [200 600]);
+    [m,n] = size(bw2);
+    blob_label2 = bwlabel(bw2);
+    stats2 = regionprops(bw2, 'Eccentricity');
+    bw22 = false(m, n);
+    for j = 1 : length(stats2)
+        if stats2(j).Eccentricity < 0.9
+            bw22(blob_label2 == j) = 1;
+        end
+    end
+    bw22 = imdilate(bw22, se);
+    imshow(bw22);
+    % Green buoy.
+    bw3 = probG > 0.01 & probG < 0.9;
+    bw3 = bwpropfilt(bw3, 'Area', [300 600]);
+    [m,n] = size(bw3);
+    blob_label3 = bwlabel(bw3);
+    stats3 = regionprops(bw3, 'Eccentricity');
+    bw33 = false(m, n);
+    for j = 1 : length(stats3)
+        if stats3(j).Eccentricity < 0.9
+            bw33(blob_label3 == j) = 1;
+        end
+    end
+    bw33 = imdilate(bw33, se2);
+%     figure
+%     imshow(bw33);
+    %% Plot the contour and centroid position on top of the image.
+    figure(1)
+    imshow(frame);
+    hold on;
+    % Yellow buoy.
+    stats1 = regionprops(bw11, 'Centroid', 'Eccentricity');
+    bw11 = imfill(bw11, 'holes');
+    B1 = bwboundaries(bw11, 8);
+    for k = 1 : length(B1)
+        if stats1(k).Eccentricity < 0.7
+            boundary1 = B1{k};
+            plot(boundary1(:, 2), boundary1(:, 1), 'y', 'LineWidth', 2)
+        end
+    end
+    for ii = 1 : length(stats1)
+        if stats1(ii).Eccentricity < 0.7
+            plot(stats1(ii).Centroid(1), stats1(ii).Centroid(2), 'y*');
+        end
+    end
+    % Red buoy.
+    stats2 = regionprops(bw22, 'Centroid', 'Eccentricity');
+    bw22 = imfill(bw22, 'holes');
+    B2 = bwboundaries(bw22, 8);
+%     hold on;
+    for k = 1 : length(B2)
+        if stats2(k).Eccentricity < 0.7
+            boundary2 = B2{k};
+            plot(boundary2(:, 2), boundary2(:, 1), 'r', 'LineWidth', 2)
+        end
+    end
+    for jj = 1 : length(stats2)
+        if stats2(jj).Eccentricity < 0.7
+            plot(stats2(jj).Centroid(1), stats2(jj).Centroid(2), 'r*');
+        end
+    end
+    % Green buoy.
+    stats3 = regionprops(bw33, 'Centroid', 'Eccentricity');
+    bw33 = imfill(bw33, 'holes');
+    B3 = bwboundaries(bw33, 8);
+%     hold on;
+    for k = 1 : length(B3)
+        if stats3(k).Eccentricity < 0.7
+            boundary3 = B3{k};
+            plot(boundary3(:, 2), boundary3(:, 1), 'g', 'LineWidth', 2)
+        end
+    end
+    for kk = 1 : length(stats3)
+        if stats3(kk).Eccentricity < 0.7
+            plot(stats3(kk).Centroid(1), stats3(kk).Centroid(2), 'g*');
+        end
+    end
+    %% Record video
+    frameVid = getframe(gca);
+    writeVideo(vid, frameVid); 
+end
+close(vid)

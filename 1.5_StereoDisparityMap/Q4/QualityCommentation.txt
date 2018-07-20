@@ -1,0 +1,6 @@
+The Result1.png and Result2.png are the output image after finishing the requirement a and b for question 4, respectively.
+
+As you can see, the details are missing significantly in the Result1 becasue I only use the fixed 25x25-pixel window to search for a fixed number of pixel to the right(25). And based on the large window, the SSD searching is affected heavily by the surrounding noise, especially in the large gradient area in the image.
+
+For the Result2, I switch the size of the window based on the gradient for every pixel. If the xGradient is relatvely larger than the y Gradient, I'll apply a y-axis-narrow window to decrease the noise. Vise versa. And if the gradient is small, which means the graph changes are small, I'll apply a large window and search for a longer routine. What's more, it's mentioned that the NCC algorithm perform better than the SSD algorithm in a lot of papers so I change the search algorithm to NCC.
+You can easily tell that the shadow influence is decreased and more details are shown in the Result2 compared to the Result1. What's more, the background noise especially the in the upper right corner is decresed a lot.
